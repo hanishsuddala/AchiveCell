@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SkillSource {
+  assessment
+  self_reported
+  project
+  certificate
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  name         String
+  email        String      @unique
+  education    String?
+  year         Int?
+  targetRoleId Int?        @map("target_role_id")
+  passwordHash String?     @map("password_hash")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  targetRole   CareerRole? @relation("TargetCareerRole", fields: [targetRoleId], references: [id], onDelete: SetNull)
+  userSkills   UserSkill[]
+  assessmentAttempts AssessmentAttempt[]
+
+  @@map("users")
+}
+
+model Skill {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  category     String
+  description  String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  userSkills   UserSkill[]
+  careerSkills CareerSkill[]
+  assessments  Assessment[]
+
+  @@map("skills")
+}
+
+model UserSkill {
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  skillId     Int         @map("skill_id")
+  proficiency Int
+  source      SkillSource @default(self_reported)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([skillId])
+  @@map("user_skills")
+}
+
+model CareerRole {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  description  String?
+  category     String
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  users        User[]         @relation("TargetCareerRole")
+  careerSkills CareerSkill[]
+
+  @@map("career_roles")
+}
+
+model CareerSkill {
+  id            Int        @id @default(autoincrement())
+  careerRoleId  Int        @map("career_role_id")
+  skillId       Int        @map("skill_id")
+  importance    Int
+  requiredLevel Int        @map("required_level")
+  careerRole    CareerRole @relation(fields: [careerRoleId], references: [id], onDelete: Cascade)
+  skill         Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([careerRoleId, skillId])
+  @@index([skillId])
+  @@map("career_skills")
+}
+
+model Assessment {
+  id        Int        @id @default(autoincrement())
+  skillId   Int        @unique @map("skill_id")
+  title     String
+  createdAt DateTime   @default(now()) @map("created_at")
+  skill     Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  questions AssessmentQuestion[]
+  attempts  AssessmentAttempt[]
+
+  @@map("assessments")
+}
+
+model AssessmentQuestion {
+  id           Int        @id @default(autoincrement())
+  assessmentId Int        @map("assessment_id")
+  prompt       String
+  options      Json
+  correctOption Int       @map("correct_option")
+  order        Int
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, order])
+  @@map("assessment_questions")
+}
+
+model AssessmentAttempt {
+  id                  Int        @id @default(autoincrement())
+  userId              Int        @map("user_id")
+  assessmentId        Int        @map("assessment_id")
+  score               Int
+  previousProficiency Int        @map("previous_proficiency")
+  updatedProficiency  Int        @map("updated_proficiency")
+  answers             Json
+  createdAt           DateTime   @default(now()) @map("created_at")
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment          Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("assessment_attempts")
+}
