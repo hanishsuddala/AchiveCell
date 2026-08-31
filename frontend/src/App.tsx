@@ -11,8 +11,10 @@ const appliedInternshipsKey = 'achievecell-applied-internships';
 const sprintsStorageKey = 'achievecell-sprints';
 const enrollmentsStorageKey = 'achievecell-enrollments';
 const notificationsStorageKey = 'achievecell-notifications';
+const academicianCoursesKey = 'achievecell-academician-courses';
 
-export type AccountType = 'student' | 'college' | 'company';
+export type AccountType = 'student' | 'academician' | 'college' | 'company';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export type Career = {
   id: number;
@@ -29,6 +31,9 @@ export type User = {
   year: number | null;
   targetRole: Career | null;
   accountType: AccountType;
+  designation?: string;
+  department?: string;
+  institution?: string;
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
@@ -202,15 +207,15 @@ export type RecommendedAction = {
 
 export type NotificationItem = {
   id: number;
-  recipientRole: 'student' | 'college' | 'company' | 'all';
+  recipientRole: 'student' | 'academician' | 'college' | 'company' | 'all';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
-  type: 'sprint' | 'internship' | 'submission' | 'general';
+  type: 'sprint' | 'internship' | 'course' | 'submission' | 'general';
   actionLabel?: string;
   actionPayload?: {
-    type: 'enroll_sprint' | 'apply_internship';
+    type: 'enroll_sprint' | 'apply_internship' | 'enroll_course';
     targetId: number;
     title: string;
   };
@@ -235,6 +240,41 @@ export type ChatMessage = {
   actions?: Array<{ label: string; path: string }>;
 };
 
+/* =========================================================================
+   Academician Domain Types & Structure
+   ========================================================================= */
+export type AcademicianCourse = {
+  id: number;
+  title: string;
+  skillTopic: string;
+  provider: string;
+  level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+  duration: string;
+  mode: 'Online' | 'Offline' | 'Hybrid';
+  certificationAvailable: boolean;
+  certificateName?: string;
+  category: 'AI & Machine Learning' | 'Data & Cloud' | 'Teaching & Pedagogy' | 'Emerging Tech' | 'Research & Grants';
+  description: string;
+  isLatest?: boolean;
+  isRecommended?: boolean;
+  enrolled?: boolean;
+  matchReason?: string;
+};
+
+export type InDemandFacultySkill = {
+  id: number;
+  name: string;
+  category: string;
+  demandTrend: 'High Growth' | 'Emerging' | 'Critical Industry Need' | 'Rapidly Growing';
+  description: string;
+  currentAdoption: string;
+  importanceRating: number;
+  recommendedCourseId: number;
+};
+
+/* =========================================================================
+   Navigations for All 4 Portals
+   ========================================================================= */
 const studentNavigation = [
   ['/dashboard', 'Dashboard', '⌂'],
   ['/recommendations', 'Career Recommendations', '↗'],
@@ -244,6 +284,15 @@ const studentNavigation = [
   ['/roadmap', 'AI Roadmap', '◇'],
   ['/internships', 'Internship Corner', '⌘'],
   ['/settings', 'Profile & Settings', '⚙'],
+] as const;
+
+const academicianNavigation = [
+  ['/dashboard', 'Dashboard', '⌂'],
+  ['/courses', 'Courses', '◈'],
+  ['/skills', 'In-Demand Skills', '◇'],
+  ['/mylearning', 'My Learning', '✓'],
+  ['/recommendations', 'Recommendations', '↗'],
+  ['/settings', 'Settings', '⚙'],
 ] as const;
 
 const collegeNavigation = [
@@ -262,10 +311,236 @@ const companyNavigation = [
   ['/settings', 'Recruiter Settings', '⚙'],
 ] as const;
 
-const accountTypeOptions: Array<{ id: AccountType; title: string; detail: string }> = [
-  { id: 'student', title: 'Student', detail: 'Assess skills and find career fit' },
-  { id: 'college', title: 'College', detail: 'Track readiness and launch sprints' },
-  { id: 'company', title: 'Company', detail: 'Shortlist verified sprint talent' },
+const accountTypeOptions: Array<{ id: AccountType; title: string; detail: string; icon: string }> = [
+  { id: 'student', title: 'Student', detail: 'Assess skills, discover career paths and follow roadmaps', icon: '🎓' },
+  { id: 'academician', title: 'Academician', detail: 'Upskill with in-demand courses and faculty development programs', icon: '🏛️' },
+  { id: 'college', title: 'College', detail: 'Track cohort readiness and launch company skill sprints', icon: '🏢' },
+  { id: 'company', title: 'Company', detail: 'Discover verified talent and post direct internships', icon: '💼' },
+];
+
+/* =========================================================================
+   Academician Initial Seed Data
+   ========================================================================= */
+const initialAcademicianCourses: AcademicianCourse[] = [
+  {
+    id: 1,
+    title: 'Generative AI & LLMs in Higher Education',
+    skillTopic: 'Generative AI & Prompt Engineering',
+    provider: 'IIT Madras & Google for Education',
+    level: 'Intermediate',
+    duration: '4 Weeks (12 Hours)',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'AICTE Recognized FDP Certificate',
+    category: 'AI & Machine Learning',
+    description: 'Master prompt engineering, LLM integration into STEM curriculum, and ethical AI in student assessment.',
+    isLatest: true,
+    isRecommended: true,
+    enrolled: false,
+    matchReason: 'High-impact emerging skill for modern CS/IT teaching.',
+  },
+  {
+    id: 2,
+    title: 'Cloud-Native Microservices & Distributed Architecture',
+    skillTopic: 'Docker, Kubernetes & Azure',
+    provider: 'Microsoft Learn & Infosys Springboard',
+    level: 'Intermediate',
+    duration: '3 Weeks (15 Hours)',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'Microsoft Certified Educator',
+    category: 'Data & Cloud',
+    description: 'Hands-on faculty track for containerizing apps, deploying microservices, and leading cloud labs.',
+    isLatest: false,
+    isRecommended: true,
+    enrolled: true,
+    matchReason: 'Aligns with industry hiring demand for cloud curriculum.',
+  },
+  {
+    id: 3,
+    title: 'Outcome-Based Education (OBE) & NBA Tier-1 Frameworks',
+    skillTopic: 'Pedagogy & Accreditation',
+    provider: 'National Institute of Technical Teachers Training (NITTTR)',
+    level: 'Advanced',
+    duration: '5 Days',
+    mode: 'Hybrid',
+    certificationAvailable: true,
+    certificateName: 'NITTTR Faculty Credential',
+    category: 'Teaching & Pedagogy',
+    description: 'In-depth workshop on Bloom’s Taxonomy mapping, CO-PO attainment calculations, and rubric design.',
+    isLatest: true,
+    isRecommended: true,
+    enrolled: true,
+    matchReason: 'Essential for institutional accreditation and program quality.',
+  },
+  {
+    id: 4,
+    title: 'Writing High-Impact Scopus/IEEE Research Papers & Grant Proposals',
+    skillTopic: 'Scholarly Research & Grants',
+    provider: 'IISc Bangalore Research Forum',
+    level: 'Intermediate',
+    duration: '4 Weekend Sessions',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'Research Methodology Certificate',
+    category: 'Research & Grants',
+    description: 'Manuscript structuring, peer-review responses, Scopus journal targeting, and DST/SERB grant proposal drafting.',
+    isLatest: false,
+    isRecommended: true,
+    enrolled: false,
+    matchReason: 'Boosts individual H-index and sponsored research eligibility.',
+  },
+  {
+    id: 5,
+    title: 'Applied Data Analytics & Predictive Modeling with Python',
+    skillTopic: 'Data Analytics & Python',
+    provider: 'TCS Innovation Labs',
+    level: 'Intermediate',
+    duration: '2 Weeks',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'TCS Industry Verified Faculty Badge',
+    category: 'Data & Cloud',
+    description: 'Data pipelines, exploratory analytics with Pandas, and practical machine learning for engineering datasets.',
+    isLatest: true,
+    isRecommended: false,
+    enrolled: false,
+    matchReason: 'Bridges the gap between academic theory and corporate data practices.',
+  },
+  {
+    id: 6,
+    title: 'Cybersecurity & Secure Software Engineering Educator Track',
+    skillTopic: 'Cybersecurity & Cryptography',
+    provider: 'Cisco Networking Academy & CERT-In',
+    level: 'Beginner',
+    duration: '3 Weeks',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'Cisco Certified Instructor',
+    category: 'Emerging Tech',
+    description: 'Network security protocols, vulnerability scanning, ethical hacking labs, and cyber threat intelligence.',
+    isLatest: true,
+    isRecommended: false,
+    enrolled: false,
+    matchReason: 'Critical national skill priority across all engineering branches.',
+  },
+  {
+    id: 7,
+    title: 'Quantum Computing Fundamentals & Qiskit for Academicians',
+    skillTopic: 'Quantum Algorithms',
+    provider: 'IBM Quantum Educators Program',
+    level: 'Beginner',
+    duration: '4 Weeks',
+    mode: 'Online',
+    certificationAvailable: true,
+    certificateName: 'IBM Quantum Educator Badge',
+    category: 'Emerging Tech',
+    description: 'Introduction to qubits, superposition, quantum circuits, and teaching quantum mechanics via Qiskit SDK.',
+    isLatest: true,
+    isRecommended: false,
+    enrolled: false,
+    matchReason: 'Next-decade frontier technology for pioneering educators.',
+  },
+  {
+    id: 8,
+    title: 'Industry 4.0, IoT & Edge Computing in Engineering Labs',
+    skillTopic: 'IoT & Embedded Systems',
+    provider: 'Bosch Sensortec Academy',
+    level: 'Intermediate',
+    duration: '2 Weeks',
+    mode: 'Hybrid',
+    certificationAvailable: true,
+    certificateName: 'Bosch Industry 4.0 Certificate',
+    category: 'Emerging Tech',
+    description: 'Smart sensor networks, MQTT telemetry, edge inference, and setting up hands-on IoT laboratory workstations.',
+    isLatest: false,
+    isRecommended: true,
+    enrolled: false,
+    matchReason: 'Modernizes physical laboratories for robotics and automation.',
+  },
+];
+
+const inDemandFacultySkills: InDemandFacultySkill[] = [
+  {
+    id: 1,
+    name: 'Generative AI & Prompt Engineering',
+    category: 'Artificial Intelligence',
+    demandTrend: 'High Growth',
+    description: 'Automated code generation, AI-assisted curriculum authoring, and synthetic lab dataset synthesis.',
+    currentAdoption: '96% of universities adopting in 2026',
+    importanceRating: 96,
+    recommendedCourseId: 1,
+  },
+  {
+    id: 2,
+    name: 'AI & Machine Learning Frameworks',
+    category: 'Artificial Intelligence',
+    demandTrend: 'High Growth',
+    description: 'Supervised/unsupervised algorithms, neural network design, and PyTorch/TensorFlow classroom labs.',
+    currentAdoption: '92% core requirement in CS/IT',
+    importanceRating: 92,
+    recommendedCourseId: 1,
+  },
+  {
+    id: 3,
+    name: 'Cloud Computing & Kubernetes',
+    category: 'Cloud & Infrastructure',
+    demandTrend: 'Critical Industry Need',
+    description: 'Microservices architecture, Docker containerization, Azure/AWS cloud environments for practicals.',
+    currentAdoption: '89% industry curriculum alignment',
+    importanceRating: 89,
+    recommendedCourseId: 2,
+  },
+  {
+    id: 4,
+    name: 'Cybersecurity & Threat Analysis',
+    category: 'Information Security',
+    demandTrend: 'Critical Industry Need',
+    description: 'Zero-trust architecture, network auditing, ethical penetration testing, and security compliance.',
+    currentAdoption: '88% national technical priority',
+    importanceRating: 88,
+    recommendedCourseId: 6,
+  },
+  {
+    id: 5,
+    name: 'Data Science & Predictive Analytics',
+    category: 'Data Engineering',
+    demandTrend: 'Rapidly Growing',
+    description: 'Statistical modeling, Pandas/NumPy pipelines, and interactive data visualization for engineering.',
+    currentAdoption: '85% demand across interdisciplinary branches',
+    importanceRating: 85,
+    recommendedCourseId: 5,
+  },
+  {
+    id: 6,
+    name: 'Industry 4.0 & Edge IoT',
+    category: 'Emerging Technologies',
+    demandTrend: 'Emerging',
+    description: 'Industrial IoT protocols, sensor fusion, edge computing nodes, and automated telemetry.',
+    currentAdoption: '82% integration in robotics & automation',
+    importanceRating: 82,
+    recommendedCourseId: 8,
+  },
+  {
+    id: 7,
+    name: 'Outcome-Based Education (OBE) & Bloom’s Rubrics',
+    category: 'Higher Ed Pedagogy',
+    demandTrend: 'Critical Industry Need',
+    description: 'CO-PO attainment mapping, continuous quality improvement (CQI), and NBA accreditation compliance.',
+    currentAdoption: '95% mandatory for accredited institutions',
+    importanceRating: 95,
+    recommendedCourseId: 3,
+  },
+  {
+    id: 8,
+    name: 'Quantum Computing Fundamentals',
+    category: 'Frontier Science',
+    demandTrend: 'Emerging',
+    description: 'Quantum gates, Qiskit circuits, and preparing students for next-generation quantum computing research.',
+    currentAdoption: '76% forward-looking research index',
+    importanceRating: 76,
+    recommendedCourseId: 7,
+  },
 ];
 
 const initialSprints: SkillSprint[] = [
@@ -300,21 +575,23 @@ const initialNotifications: NotificationItem[] = [
   },
   {
     id: 3,
+    recipientRole: 'academician',
+    title: 'New FDP: Generative AI in Higher Education',
+    message: 'IIT Madras & Google announced an AICTE recognized FDP for faculty upskilling.',
+    timestamp: '20m ago',
+    read: false,
+    type: 'course',
+    actionLabel: 'View Course',
+    actionPayload: { type: 'enroll_course', targetId: 1, title: 'Generative AI & LLMs in Higher Education' },
+  },
+  {
+    id: 4,
     recipientRole: 'college',
     title: 'New Internship Opportunity Posted',
     message: 'Flipkart posted Frontend UI/UX Engineering Intern. 35 students in your cohort meet the requirements.',
     timestamp: '2h ago',
     read: false,
     type: 'internship',
-  },
-  {
-    id: 4,
-    recipientRole: 'college',
-    title: 'Skill Sprint Submission Received',
-    message: 'Ananya Sharma submitted verified proof of work for the 7-Day SQL Task.',
-    timestamp: '3h ago',
-    read: false,
-    type: 'submission',
   },
   {
     id: 5,
@@ -748,7 +1025,23 @@ const mockAssessmentsData: Record<number, Assessment> = {
 
 function readStoredAccountType(): AccountType {
   const stored = localStorage.getItem(accountTypeKey);
-  return stored === 'college' || stored === 'company' || stored === 'student' ? stored : 'student';
+  if (stored === 'student' || stored === 'academician' || stored === 'college' || stored === 'company') {
+    return stored;
+  }
+  return 'student';
+}
+
+function applyThemeClass(theme: ThemeMode): void {
+  const isDark =
+    theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  if (isDark) {
+    document.body.classList.add('dark-theme');
+    document.body.classList.remove('light-theme');
+  } else {
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('light-theme');
+  }
 }
 
 function withAccountType(
@@ -761,11 +1054,14 @@ function withAccountType(
     year: user.year ?? 2,
     targetRole: user.targetRole ?? defaultCareers[0],
     accountType,
-    linkedinUrl: user.linkedinUrl ?? 'https://linkedin.com/in/ananya-sharma',
-    githubUrl: user.githubUrl ?? 'https://github.com/ananya-dev',
-    portfolioUrl: user.portfolioUrl ?? 'https://ananya-portfolio.dev',
+    designation: user.designation ?? (accountType === 'academician' ? 'Associate Professor' : undefined),
+    department: user.department ?? (accountType === 'academician' ? 'Computer Science & Engineering' : undefined),
+    institution: user.institution ?? 'AchieveCell Institute of Technology',
+    linkedinUrl: user.linkedinUrl ?? 'https://linkedin.com/in/achievecell-user',
+    githubUrl: user.githubUrl ?? 'https://github.com/achievecell-dev',
+    portfolioUrl: user.portfolioUrl ?? 'https://achievecell.dev',
     collegeName: user.collegeName ?? 'AchieveCell Institute of Technology',
-    studentId: user.studentId ?? 'ACIT-2024-CSE-042',
+    studentId: user.studentId ?? 'ACIT-2024-042',
   };
 }
 
@@ -864,6 +1160,21 @@ function saveStoredNotifications(list: NotificationItem[]): void {
   } catch {}
 }
 
+function getStoredAcademicianCourses(): AcademicianCourse[] {
+  try {
+    const raw = localStorage.getItem(academicianCoursesKey);
+    return raw ? (JSON.parse(raw) as AcademicianCourse[]) : initialAcademicianCourses;
+  } catch {
+    return initialAcademicianCourses;
+  }
+}
+
+function saveStoredAcademicianCourses(list: AcademicianCourse[]): void {
+  try {
+    localStorage.setItem(academicianCoursesKey, JSON.stringify(list));
+  } catch {}
+}
+
 function getLocalSkills(): Skill[] {
   try {
     const raw = localStorage.getItem('achievecell-mock-skills');
@@ -889,17 +1200,34 @@ function getLocalUser(accountType: AccountType): User {
   } catch {}
   return {
     id: 1,
-    name: accountType === 'college' ? 'AchieveCell Institute' : accountType === 'company' ? 'Infosys Talent Partner' : 'Ananya Sharma',
-    email: 'ananya.sharma@achievecell.demo',
+    name:
+      accountType === 'academician'
+        ? 'Dr. Rajesh Sharma'
+        : accountType === 'college'
+          ? 'AchieveCell Institute'
+          : accountType === 'company'
+            ? 'Infosys Talent Partner'
+            : 'Ananya Sharma',
+    email:
+      accountType === 'academician'
+        ? 'prof.sharma@achievecell.edu'
+        : accountType === 'college'
+          ? 'admin@achievecell.edu'
+          : accountType === 'company'
+            ? 'recruiter@infosys.demo'
+            : 'ananya.sharma@achievecell.demo',
     education: 'B.Tech CSE',
     year: 2,
     targetRole: defaultCareers[0],
     accountType,
-    linkedinUrl: 'https://linkedin.com/in/ananya-sharma',
-    githubUrl: 'https://github.com/ananya-dev',
-    portfolioUrl: 'https://ananya-portfolio.dev',
+    designation: accountType === 'academician' ? 'Associate Professor & Research Lead' : undefined,
+    department: accountType === 'academician' ? 'Computer Science & Engineering' : undefined,
+    institution: 'AchieveCell Institute of Technology',
+    linkedinUrl: 'https://linkedin.com/in/achievecell-user',
+    githubUrl: 'https://github.com/achievecell-dev',
+    portfolioUrl: 'https://achievecell.dev',
     collegeName: 'AchieveCell Institute of Technology',
-    studentId: 'ACIT-2024-CSE-042',
+    studentId: 'ACIT-2024-042',
   };
 }
 
@@ -909,8 +1237,8 @@ function fallbackMockRequest<T>(path: string, options: RequestInit = {}): T {
   const skills = getLocalSkills();
 
   if (path === '/auth/login' || path === '/auth/register') {
-    let name = 'Ananya Sharma';
-    let email = 'ananya.sharma@achievecell.demo';
+    let name = user.name;
+    let email = user.email;
     let edu = 'B.Tech CSE';
     let yr = 2;
     if (options.body) {
@@ -1304,8 +1632,8 @@ export function NotificationDropdown({
         maxHeight: '32rem',
         overflowY: 'auto',
         zIndex: 100,
-        boxShadow: '0 12px 36px rgba(18, 32, 68, 0.18)',
-        border: '1px solid #d9e1f5',
+        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.28)',
+        border: '1px solid var(--border-color, #d9e1f5)',
         padding: '1.2rem',
       }}
     >
@@ -1333,17 +1661,17 @@ export function NotificationDropdown({
                 padding: '.8rem',
                 borderRadius: '.6rem',
                 border: '1px solid',
-                borderColor: item.read ? '#e5e9f2' : '#c3d2f8',
-                background: item.read ? '#fcfdff' : '#f0f4ff',
+                borderColor: item.read ? 'var(--border-subtle, #e5e9f2)' : 'var(--border-focus, #c3d2f8)',
+                background: item.read ? 'var(--card-bg, #fcfdff)' : 'var(--highlight-bg, #f0f4ff)',
                 display: 'grid',
                 gap: '.35rem',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong style={{ fontSize: '.84rem', color: '#25355e' }}>{item.title}</strong>
-                <small style={{ color: '#7e8ba6', fontSize: '.68rem' }}>{item.timestamp}</small>
+                <strong style={{ fontSize: '.84rem' }}>{item.title}</strong>
+                <small style={{ color: 'var(--text-muted, #7e8ba6)', fontSize: '.68rem' }}>{item.timestamp}</small>
               </div>
-              <p style={{ margin: 0, fontSize: '.78rem', color: '#576686', lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: '.78rem', lineHeight: 1.45 }}>
                 {item.message}
               </p>
               {item.actionLabel && (
@@ -1360,7 +1688,7 @@ export function NotificationDropdown({
             </div>
           ))
         ) : (
-          <p style={{ margin: '1rem 0', textAlign: 'center', color: '#7c88a3', fontSize: '.82rem' }}>
+          <p style={{ margin: '1rem 0', textAlign: 'center', color: 'var(--text-muted, #7c88a3)', fontSize: '.82rem' }}>
             No new notifications for your account.
           </p>
         )}
@@ -1456,8 +1784,8 @@ export function FloatingAiAssistant({
             flexDirection: 'column',
             zIndex: 999,
             padding: '1rem',
-            boxShadow: '0 16px 40px rgba(18, 30, 64, 0.25)',
-            border: '1px solid #d4def7',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.35)',
+            border: '1px solid var(--border-color, #d4def7)',
           }}
         >
           <div
@@ -1465,13 +1793,13 @@ export function FloatingAiAssistant({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              borderBottom: '1px solid #e7ecf8',
+              borderBottom: '1px solid var(--border-subtle, #e7ecf8)',
               paddingBottom: '.6rem',
               marginBottom: '.6rem',
             }}
           >
             <div>
-              <strong style={{ fontSize: '.9rem', color: '#25355e' }}>✦ AchieveCell AI Assistant</strong>
+              <strong style={{ fontSize: '.9rem' }}>✦ AchieveCell AI Assistant</strong>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem' }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3cb371' }} />
                 <small style={{ fontSize: '.68rem', color: '#3cb371', fontWeight: 700 }}>Online & Tailored</small>
@@ -1491,8 +1819,8 @@ export function FloatingAiAssistant({
                   maxWidth: '85%',
                   padding: '.65rem .85rem',
                   borderRadius: '.8rem',
-                  background: m.sender === 'user' ? '#4059c9' : '#f0f4ff',
-                  color: m.sender === 'user' ? '#fff' : '#223257',
+                  background: m.sender === 'user' ? 'var(--primary-color, #4059c9)' : 'var(--card-hover-bg, #f0f4ff)',
+                  color: m.sender === 'user' ? '#fff' : 'inherit',
                   fontSize: '.8rem',
                   lineHeight: 1.45,
                 }}
@@ -1704,7 +2032,7 @@ export function StudentProfile({
 }
 
 /* =========================================================================
-   2. Auth Page
+   2. Auth Page (With 4 Portals: Student, Academician, College, Company)
    ========================================================================= */
 export function AuthPage({
   mode,
@@ -1715,7 +2043,7 @@ export function AuthPage({
 }): ReactElement {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [accountType, setAccountType] = useState<AccountType>('student');
+  const [accountType, setAccountType] = useState<AccountType>(readStoredAccountType);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1730,6 +2058,9 @@ export function AuthPage({
             password: form.get('password'),
             education: form.get('education'),
             year: form.get('year') ? Number(form.get('year')) : undefined,
+            designation: form.get('designation'),
+            department: form.get('department'),
+            institution: form.get('institution'),
             accountType,
           }
         : {
@@ -1755,11 +2086,22 @@ export function AuthPage({
 
   const isLogin = mode === 'login';
   const namePlaceholder =
-    accountType === 'college'
-      ? 'e.g. AchieveCell Institute of Technology'
-      : accountType === 'company'
-        ? 'e.g. Infosys Talent Team'
-        : 'e.g. Ananya Sharma';
+    accountType === 'academician'
+      ? 'e.g. Dr. Rajesh Sharma'
+      : accountType === 'college'
+        ? 'e.g. AchieveCell Institute of Technology'
+        : accountType === 'company'
+          ? 'e.g. Infosys Talent Team'
+          : 'e.g. Ananya Sharma';
+
+  const defaultDemoEmail =
+    accountType === 'academician'
+      ? 'prof.sharma@achievecell.edu'
+      : accountType === 'college'
+        ? 'admin@achievecell.edu'
+        : accountType === 'company'
+          ? 'recruiter@infosys.demo'
+          : 'ananya.sharma@achievecell.demo';
 
   return (
     <main className="auth-shell">
@@ -1768,14 +2110,17 @@ export function AuthPage({
           <span>✦</span> AchieveCell
         </button>
         <div>
-          <p className="eyebrow">Smart India Hackathon Prototype</p>
-          <h1>Career clarity, verified skills, and talent matching.</h1>
-          <p>Students prove skills through assessments, colleges launch focused sprints, and companies recruit verified talent.</p>
+          <p className="eyebrow">Smart India Hackathon · Multi-Persona Platform</p>
+          <h1>Career clarity, faculty upskilling, and verified talent matching.</h1>
+          <p>
+            Students discover learning roadmaps, academicians upskill with emerging technologies, colleges track cohort readiness, and companies recruit verified talent.
+          </p>
         </div>
         <div className="showcase-points">
-          <span>✓ Real skill assessments & gap analyzer</span>
-          <span>✓ College readiness tracking & skill sprints</span>
-          <span>✓ Recruiter discovery & internship matching</span>
+          <span>✓ Student Skill Assessments & AI Learning Roadmaps</span>
+          <span>✓ Academician In-Demand Upskilling & Faculty Development Programs (FDPs)</span>
+          <span>✓ College Role Readiness Analytics & Skill Sprints</span>
+          <span>✓ Recruiter Candidate Discovery & Verified Proof of Work</span>
         </div>
       </section>
 
@@ -1790,18 +2135,25 @@ export function AuthPage({
 
         <form onSubmit={submit} className="form-stack" noValidate>
           <div>
-            <p className="section-kicker">Account type</p>
-            <div className="options">
-              {accountTypeOptions.map((option, optionIndex) => (
-                <label key={option.id} className={`option ${accountType === option.id ? 'chosen' : ''}`}>
+            <p className="section-kicker">Choose Your Portal</p>
+            <div className="options" style={{ gridTemplateColumns: '1fr' }}>
+              {accountTypeOptions.map((option) => (
+                <label
+                  key={option.id}
+                  className={`option ${accountType === option.id ? 'chosen' : ''}`}
+                  style={{ gridTemplateColumns: 'auto 1.8rem 1fr', padding: '.75rem .9rem' }}
+                >
                   <input
                     type="radio"
                     name="accountType"
                     checked={accountType === option.id}
                     onChange={() => setAccountType(option.id)}
                   />
-                  <span>{String.fromCharCode(65 + optionIndex)}</span>
-                  {`${option.title} — ${option.detail}`}
+                  <span style={{ fontSize: '1.1rem' }}>{option.icon}</span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '.88rem' }}>{option.title}</strong>
+                    <small style={{ color: 'var(--text-muted, #728099)', fontSize: '.74rem' }}>{option.detail}</small>
+                  </div>
                 </label>
               ))}
             </div>
@@ -1810,27 +2162,41 @@ export function AuthPage({
           {!isLogin && (
             <>
               <label htmlFor="name">
-                {accountType === 'student' ? 'Full name' : accountType === 'college' ? 'College name' : 'Company name'}
+                {accountType === 'student' ? 'Full name' : accountType === 'academician' ? 'Full name with title' : accountType === 'college' ? 'College name' : 'Company name'}
                 <input id="name" name="name" required minLength={2} placeholder={namePlaceholder} />
               </label>
+
+              {accountType === 'academician' && (
+                <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                  <label htmlFor="designation">
+                    Academic Title
+                    <input id="designation" name="designation" placeholder="e.g. Associate Professor" />
+                  </label>
+                  <label htmlFor="department">
+                    Department
+                    <input id="department" name="department" placeholder="e.g. Computer Science & Eng" />
+                  </label>
+                </div>
+              )}
+
               {accountType === 'student' && (
-                <>
+                <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                   <label htmlFor="education">
-                    Education <span className="optional">Optional</span>
+                    Degree / Branch <span className="optional">Optional</span>
                     <input id="education" name="education" placeholder="e.g. B.Tech CSE" />
                   </label>
                   <label htmlFor="year">
-                    Year <span className="optional">Optional</span>
+                    Cohort Year <span className="optional">Optional</span>
                     <input id="year" name="year" type="number" min="1" max="8" placeholder="e.g. 2" />
                   </label>
-                </>
+                </div>
               )}
             </>
           )}
 
           <label htmlFor="email">
-            Email address
-            <input id="email" name="email" type="email" required placeholder="you@example.com" />
+            {accountType === 'academician' ? 'Institution / Official Email' : 'Email address'}
+            <input id="email" name="email" type="email" required defaultValue={defaultDemoEmail} placeholder="you@university.edu" />
           </label>
 
           <label htmlFor="password">
@@ -1841,6 +2207,7 @@ export function AuthPage({
               type="password"
               minLength={8}
               required
+              defaultValue="password123"
               placeholder="At least 8 characters"
             />
           </label>
@@ -1848,22 +2215,18 @@ export function AuthPage({
           {error && <p className="form-error" role="alert">{error}</p>}
 
           <button className="primary-button full-button" disabled={busy}>
-            {busy ? 'Please wait…' : isLogin ? `Log in as ${accountType}` : `Create my ${accountType} account`}
+            {busy ? 'Please wait…' : isLogin ? `Log in as ${accountTypeOptions.find((o) => o.id === accountType)?.title}` : `Create ${accountTypeOptions.find((o) => o.id === accountType)?.title} Account`}
           </button>
         </form>
 
-        {isLogin && (
-          <p className="demo-note">
-            <strong>Want to explore?</strong> Use the demo account and select Student, College, or Company:
-            <br />
-            ananya.sharma@achievecell.demo
-          </p>
-        )}
+        <p className="demo-note" style={{ marginTop: '1.2rem' }}>
+          <strong>One-click Demo Credential:</strong> {defaultDemoEmail}
+        </p>
 
         <p className="auth-switch">
-          {isLogin ? 'New to AchieveCell?' : 'Already have an account?'}{' '}
+          {isLogin ? 'New user?' : 'Already registered?'}{' '}
           <button onClick={() => navigate(isLogin ? '/register' : '/login')}>
-            {isLogin ? 'Create account' : 'Log in'}
+            {isLogin ? 'Create profile' : 'Log in'}
           </button>
         </p>
       </section>
@@ -1872,7 +2235,789 @@ export function AuthPage({
 }
 
 /* =========================================================================
-   3. Student Dashboard
+   3. Academician Dashboard (NEW 4th Portal: Faculty Upskilling Platform)
+   ========================================================================= */
+export function AcademicianDashboard({
+  user,
+  focus,
+  courses,
+  onToggleEnroll,
+  onUserUpdated,
+}: {
+  user: User;
+  focus?: 'overview' | 'courses' | 'skills' | 'mylearning' | 'recommendations' | 'settings';
+  courses: AcademicianCourse[];
+  onToggleEnroll: (courseId: number) => void;
+  onUserUpdated: (user: User) => void;
+}): ReactElement {
+  const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [search, setSearch] = useState('');
+  const [selectedCourseModal, setSelectedCourseModal] = useState<AcademicianCourse | null>(null);
+  const [message, setMessage] = useState('');
+
+  const enrolledCourses = courses.filter((c) => c.enrolled);
+  const recommendedCourses = courses.filter((c) => c.isRecommended);
+  const latestCourses = courses.filter((c) => c.isLatest);
+
+  const categories = ['All', 'AI & Machine Learning', 'Data & Cloud', 'Teaching & Pedagogy', 'Emerging Tech', 'Research & Grants'];
+
+  const filteredCourses = courses.filter((c) => {
+    const matchesCat = filterCategory === 'All' || c.category === filterCategory;
+    const matchesSearch =
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.provider.toLowerCase().includes(search.toLowerCase()) ||
+      c.skillTopic.toLowerCase().includes(search.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  function handleEnroll(c: AcademicianCourse) {
+    onToggleEnroll(c.id);
+    setMessage(
+      c.enrolled
+        ? `Unenrolled from "${c.title}".`
+        : `Successfully enrolled in "${c.title}"! Course syllabus and schedule sent to ${user.email}.`,
+    );
+  }
+
+  /* -------------------------------------------------------------
+     Settings Tab for Academician
+     ------------------------------------------------------------- */
+  if (focus === 'settings') {
+    return (
+      <UniversalSettingsPage
+        user={user}
+        onUserUpdated={onUserUpdated}
+        accountTypeLabel="Academician & Faculty"
+      />
+    );
+  }
+
+  /* -------------------------------------------------------------
+     My Learning Tab
+     ------------------------------------------------------------- */
+  if (focus === 'mylearning') {
+    return (
+      <div className="page">
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">Professional Development Journey</p>
+            <h1>My Learning & Enrolled Courses</h1>
+            <p className="muted">Track your active upskilling programs, certifications, and completion milestones.</p>
+          </div>
+          <button className="primary-button" onClick={() => navigate('/courses')}>
+            Browse More Courses
+          </button>
+        </div>
+
+        {message && <div className="success-message" role="status">✓ {message}</div>}
+
+        {enrolledCourses.length ? (
+          <div className="assessment-grid">
+            {enrolledCourses.map((c) => (
+              <article className="card assessment-card" key={c.id}>
+                <div className="assessment-card-top">
+                  <Badge tone="category">{c.provider}</Badge>
+                  <Badge tone="strong">✓ Enrolled</Badge>
+                </div>
+                <h2>{c.title}</h2>
+                <p>{c.description}</p>
+                <small><strong>Topic:</strong> {c.skillTopic} · <strong>Duration:</strong> {c.duration}</small>
+                {c.certificateName && (
+                  <small style={{ color: 'var(--accent-blue, #4059c9)', fontWeight: 650, marginTop: '.3rem' }}>
+                    🏆 {c.certificateName}
+                  </small>
+                )}
+                <div style={{ marginTop: 'auto', width: '100%', display: 'flex', gap: '.5rem' }}>
+                  <button className="primary-button" style={{ flex: 1 }} onClick={() => setSelectedCourseModal(c)}>
+                    Continue Learning
+                  </button>
+                  <button className="ghost-button" onClick={() => handleEnroll(c)}>
+                    Unenroll
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <Empty
+            title="No active courses enrolled"
+            text="Explore recommended faculty development programs and enroll in one click."
+            action="Browse Recommended Courses"
+            path="/courses"
+          />
+        )}
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     In-Demand Skills Tab
+     ------------------------------------------------------------- */
+  if (focus === 'skills') {
+    return (
+      <div className="page">
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">Academic & Industry Intelligence</p>
+            <h1>In-Demand Skills for Higher Ed Educators</h1>
+            <p className="muted">Discover emerging competencies currently transforming STEM curricula and industry hiring.</p>
+          </div>
+        </div>
+
+        <div className="dashboard-grid">
+          <section className="card dashboard-skills" style={{ gridColumn: 'span 2' }}>
+            <div className="card-heading">
+              <div>
+                <p className="section-kicker">Competency Demand Index</p>
+                <h2>Trending Skills Matrix</h2>
+                <p>Curated based on 2026 AICTE directives, global university standards, and industry recruitment needs.</p>
+              </div>
+              <Badge tone="strong">8 Key Competencies</Badge>
+            </div>
+
+            <div className="skill-table">
+              {inDemandFacultySkills.map((sk) => (
+                <article className="skill-card" key={sk.id}>
+                  <div>
+                    <Badge tone="category">{sk.category}</Badge>
+                    <h2>{sk.name}</h2>
+                    <p>{sk.description}</p>
+                    <small style={{ color: 'var(--accent-blue, #4059c9)', fontWeight: 700 }}>{sk.currentAdoption}</small>
+                  </div>
+                  <strong>{sk.importanceRating}%</strong>
+                  <ProgressBar value={sk.importanceRating} tone="strong" />
+                  <Badge tone={sk.demandTrend === 'High Growth' ? 'strong' : 'building-confidence'}>
+                    {sk.demandTrend}
+                  </Badge>
+                  <button
+                    className="primary-button"
+                    onClick={() => {
+                      const match = courses.find((c) => c.id === sk.recommendedCourseId);
+                      if (match) setSelectedCourseModal(match);
+                    }}
+                  >
+                    View Course
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     Recommendations Tab
+     ------------------------------------------------------------- */
+  if (focus === 'recommendations') {
+    return (
+      <div className="page">
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">Personalized AI Upskilling Engine</p>
+            <h1>Recommended Programs & FDPs</h1>
+            <p className="muted">Courses mapped directly to your teaching domain, research goals, and accreditation metrics.</p>
+          </div>
+        </div>
+
+        {message && <div className="success-message" role="status">✓ {message}</div>}
+
+        <div className="assessment-grid">
+          {recommendedCourses.map((c) => (
+            <article className="card assessment-card" key={c.id} style={{ borderTop: `3px solid ${c.enrolled ? '#49b87d' : '#596fc9'}` }}>
+              <div className="assessment-card-top">
+                <Badge tone="category">{c.provider}</Badge>
+                <Badge tone={c.enrolled ? 'strong' : 'building-confidence'}>
+                  {c.enrolled ? '✓ Enrolled' : c.level}
+                </Badge>
+              </div>
+              <h2>{c.title}</h2>
+              <p>{c.description}</p>
+              <div style={{ margin: '.5rem 0', padding: '.6rem .75rem', background: 'var(--card-hover-bg, #f8fafd)', borderRadius: '.6rem', fontSize: '.76rem', display: 'grid', gap: '.2rem' }}>
+                <div><strong>Topic:</strong> {c.skillTopic}</div>
+                <div><strong>Duration:</strong> {c.duration} · {c.mode}</div>
+                {c.certificateName && <div><strong>Accreditation:</strong> {c.certificateName}</div>}
+              </div>
+              <div style={{ margin: '.3rem 0 .8rem', color: 'var(--accent-blue, #4059c9)', fontSize: '.75rem', fontWeight: 650 }}>
+                ✦ {c.matchReason}
+              </div>
+              <div style={{ marginTop: 'auto', width: '100%', display: 'flex', gap: '.5rem' }}>
+                <button
+                  className={c.enrolled ? 'ghost-button' : 'primary-button'}
+                  style={{ flex: 1 }}
+                  onClick={() => handleEnroll(c)}
+                >
+                  {c.enrolled ? '✓ Enrolled' : 'Enroll / Learn More'}
+                </button>
+                <button className="secondary-button" onClick={() => setSelectedCourseModal(c)}>
+                  Details
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------
+     Main Academician Dashboard Overview
+     ------------------------------------------------------------- */
+  return (
+    <div className="page">
+      {/* Welcome Hero Section */}
+      <section className="hero-card">
+        <div>
+          <p className="eyebrow">Faculty Professional Development</p>
+          <h1>Welcome back, {user.name.split(' ')[0]}.</h1>
+          <p>
+            Continue growing your expertise. Discover AICTE-recognized Faculty Development Programs (FDPs), master in-demand AI & Cloud architectures, and stay ahead in modern pedagogical research.
+          </p>
+          <div className="hero-actions">
+            <button className="primary-button" onClick={() => navigate('/courses')}>
+              Explore Latest Courses
+            </button>
+            <button className="ghost-button" onClick={() => navigate('/skills')}>
+              View In-Demand Skills
+            </button>
+          </div>
+        </div>
+
+        <div className="role-orbit">
+          <span>Faculty Profile</span>
+          <strong>AI & Pedagogy Lead</strong>
+          <small>{user.department ?? 'Computer Science & Eng'} · Professional Relevancy: 84%</small>
+          <ProgressBar value={84} tone="strong" />
+        </div>
+      </section>
+
+      {message && <div className="success-message" role="status">✓ {message}</div>}
+
+      {/* Metrics Section */}
+      <div className="metric-grid">
+        <Metric label="Active Courses Enrolled" value={String(enrolledCourses.length)} detail="Currently in progress" accent="violet" />
+        <Metric label="In-Demand Skills Tracked" value="8 Skills" detail="Across AI, Cloud & Pedagogy" accent="green" />
+        <Metric label="Certifications Earned" value="3 Verified" detail="Accredited by AICTE/Industry" accent="orange" />
+        <Metric label="Professional Relevancy Score" value="84%" detail="Top 10% in departmental benchmark" accent="blue" />
+      </div>
+
+      {/* Stay Ahead: Emerging Technologies */}
+      <section className="card">
+        <div className="card-heading">
+          <div>
+            <p className="section-kicker">Stay Ahead</p>
+            <h2>Emerging Technologies for Educators</h2>
+            <p>Emerging fields you should consider integrating into your curriculum and research to remain professionally relevant.</p>
+          </div>
+          <Badge tone="strong">2026 Tech Radar</Badge>
+        </div>
+
+        <div className="role-grid">
+          <article className="role-card">
+            <div className="role-card-top">
+              <Badge tone="category">AI Frontier</Badge>
+              <Badge tone="strong">High Urgency</Badge>
+            </div>
+            <h2>Generative AI & LLMs in Curriculum</h2>
+            <p>Incorporate prompt engineering, fine-tuning, and RAG architectures into software engineering and data science lab coursework.</p>
+            <button className="text-button" style={{ marginTop: 'auto' }} onClick={() => navigate('/courses')}>
+              Explore Generative AI Courses →
+            </button>
+          </article>
+
+          <article className="role-card">
+            <div className="role-card-top">
+              <Badge tone="category">Cloud Native</Badge>
+              <Badge tone="category">Essential</Badge>
+            </div>
+            <h2>Microservices & Kubernetes Lab Design</h2>
+            <p>Upgrade desktop-bound client-server practicals to containerized microservice architectures deployed on live cloud clusters.</p>
+            <button className="text-button" style={{ marginTop: 'auto' }} onClick={() => navigate('/courses')}>
+              Explore Cloud Courses →
+            </button>
+          </article>
+
+          <article className="role-card">
+            <div className="role-card-top">
+              <Badge tone="category">Accreditation</Badge>
+              <Badge tone="strong">NBA Tier-1</Badge>
+            </div>
+            <h2>Outcome-Based Education (OBE) Mastery</h2>
+            <p>Calculate direct and indirect course outcome attainments effortlessly with modern rubrics and Bloom’s taxonomy mapping tools.</p>
+            <button className="text-button" style={{ marginTop: 'auto' }} onClick={() => navigate('/courses')}>
+              Explore Pedagogy Courses →
+            </button>
+          </article>
+        </div>
+      </section>
+
+      {/* Recommended for You Section */}
+      <section className="card">
+        <div className="card-heading">
+          <div>
+            <p className="section-kicker">AI Recommendation Engine</p>
+            <h2>Recommended for You</h2>
+            <p>Courses and development programs recommended based on your academic background and teaching interests.</p>
+          </div>
+          <button className="text-button" onClick={() => navigate('/recommendations')}>
+            See All Recommendations
+          </button>
+        </div>
+
+        <div className="assessment-grid">
+          {recommendedCourses.slice(0, 4).map((c) => (
+            <article className="card assessment-card" key={c.id}>
+              <div className="assessment-card-top">
+                <Badge tone="category">{c.provider}</Badge>
+                <Badge tone={c.enrolled ? 'strong' : 'building-confidence'}>
+                  {c.enrolled ? '✓ Enrolled' : c.level}
+                </Badge>
+              </div>
+              <h2>{c.title}</h2>
+              <p>{c.description}</p>
+              <div style={{ margin: '.4rem 0', fontSize: '.75rem', color: 'var(--text-muted, #728099)' }}>
+                <strong>Duration:</strong> {c.duration} · {c.mode}
+              </div>
+              <div style={{ margin: '.3rem 0 .8rem', color: 'var(--accent-blue, #4059c9)', fontSize: '.75rem', fontWeight: 650 }}>
+                ✦ {c.matchReason}
+              </div>
+              <div style={{ marginTop: 'auto', width: '100%', display: 'flex', gap: '.5rem' }}>
+                <button
+                  className={c.enrolled ? 'ghost-button' : 'primary-button'}
+                  style={{ flex: 1 }}
+                  onClick={() => handleEnroll(c)}
+                >
+                  {c.enrolled ? '✓ Enrolled' : 'Enroll / Learn More'}
+                </button>
+                <button className="secondary-button" onClick={() => setSelectedCourseModal(c)}>
+                  Details
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* In-Demand Skills Spotlight */}
+      <section className="card">
+        <div className="card-heading">
+          <div>
+            <p className="section-kicker">Industry & Higher Ed Trends</p>
+            <h2>In-Demand Skills</h2>
+            <p>Key technical and pedagogical areas gaining priority across academic institutions and hiring partners.</p>
+          </div>
+          <button className="text-button" onClick={() => navigate('/skills')}>
+            Explore All 8 Skills
+          </button>
+        </div>
+
+        <div className="skill-table">
+          {inDemandFacultySkills.slice(0, 4).map((sk) => (
+            <article className="skill-card" key={sk.id}>
+              <div>
+                <Badge tone="category">{sk.category}</Badge>
+                <h2>{sk.name}</h2>
+                <p>{sk.description}</p>
+              </div>
+              <strong>{sk.importanceRating}%</strong>
+              <ProgressBar value={sk.importanceRating} tone="strong" />
+              <Badge tone="strong">{sk.demandTrend}</Badge>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  const match = courses.find((c) => c.id === sk.recommendedCourseId);
+                  if (match) setSelectedCourseModal(match);
+                }}
+              >
+                View Program
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Latest Courses & Programs */}
+      <section className="card">
+        <div className="card-heading">
+          <div>
+            <p className="section-kicker">Catalog Directory</p>
+            <h2>Latest Courses & FDPs</h2>
+            <p>Newly announced faculty upskilling opportunities from universities and corporate tech labs.</p>
+          </div>
+          <Badge tone="category">{String(filteredCourses.length)} Available</Badge>
+        </div>
+
+        {/* Category Filters */}
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1.2rem' }}>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              className={filterCategory === cat ? 'primary-button' : 'ghost-button'}
+              style={{ fontSize: '.78rem', padding: '.45rem .85rem' }}
+              onClick={() => setFilterCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <label className="search-label" htmlFor="course-search" style={{ marginBottom: '1.2rem' }}>
+          Search courses by topic, skill, or provider
+          <input
+            id="course-search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="e.g. Generative AI, IIT Madras, Cloud, NBA, Python…"
+          />
+        </label>
+
+        <div className="assessment-grid">
+          {filteredCourses.map((c) => (
+            <article className="card assessment-card" key={c.id}>
+              <div className="assessment-card-top">
+                <Badge tone="category">{c.provider}</Badge>
+                <Badge tone={c.enrolled ? 'strong' : 'building-confidence'}>
+                  {c.enrolled ? '✓ Enrolled' : c.level}
+                </Badge>
+              </div>
+              <h2>{c.title}</h2>
+              <p>{c.description}</p>
+              <div style={{ margin: '.5rem 0', padding: '.5rem .75rem', background: 'var(--card-hover-bg, #f8fafd)', borderRadius: '.6rem', fontSize: '.76rem', display: 'grid', gap: '.2rem' }}>
+                <div><strong>Topic:</strong> {c.skillTopic}</div>
+                <div><strong>Duration:</strong> {c.duration} · {c.mode}</div>
+                {c.certificateName && <div><strong>Certificate:</strong> {c.certificateName}</div>}
+              </div>
+              <div style={{ marginTop: 'auto', width: '100%', display: 'flex', gap: '.5rem' }}>
+                <button
+                  className={c.enrolled ? 'ghost-button' : 'primary-button'}
+                  style={{ flex: 1 }}
+                  onClick={() => handleEnroll(c)}
+                >
+                  {c.enrolled ? '✓ Enrolled' : 'Enroll / Learn More'}
+                </button>
+                <button className="secondary-button" onClick={() => setSelectedCourseModal(c)}>
+                  Details
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Course Modal */}
+      {selectedCourseModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.65)',
+            zIndex: 1000,
+            display: 'grid',
+            placeItems: 'center',
+            padding: '1.5rem',
+          }}
+          onClick={() => setSelectedCourseModal(null)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: '38rem',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '2rem',
+              position: 'relative',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div>
+                <Badge tone="category">{selectedCourseModal.provider}</Badge>
+                <h1 style={{ fontSize: '1.4rem', margin: '.5rem 0 .2rem' }}>{selectedCourseModal.title}</h1>
+                <p className="muted" style={{ margin: 0 }}>{selectedCourseModal.category} · Level: {selectedCourseModal.level}</p>
+              </div>
+              <button className="text-button" style={{ fontSize: '1.2rem' }} onClick={() => setSelectedCourseModal(null)}>
+                ✕
+              </button>
+            </div>
+
+            <p style={{ lineHeight: 1.6, margin: '1rem 0' }}>{selectedCourseModal.description}</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', background: 'var(--card-hover-bg, #f8fafd)', padding: '1rem', borderRadius: '.8rem', margin: '1rem 0' }}>
+              <div>
+                <small style={{ color: 'var(--text-muted, #728099)', display: 'block' }}>Primary Focus Topic</small>
+                <strong>{selectedCourseModal.skillTopic}</strong>
+              </div>
+              <div>
+                <small style={{ color: 'var(--text-muted, #728099)', display: 'block' }}>Delivery Format</small>
+                <strong>{selectedCourseModal.mode} ({selectedCourseModal.duration})</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <small style={{ color: 'var(--text-muted, #728099)', display: 'block' }}>Certification & Credential</small>
+                <strong style={{ color: 'var(--accent-blue, #4059c9)' }}>{selectedCourseModal.certificateName ?? 'Course Completion Credential'}</strong>
+              </div>
+            </div>
+
+            <div style={{ margin: '1.2rem 0' }}>
+              <strong style={{ fontSize: '.9rem' }}>Curriculum Modules & Outcomes:</strong>
+              <ul style={{ paddingLeft: '1.2rem', marginTop: '.4rem', fontSize: '.84rem', display: 'grid', gap: '.4rem' }}>
+                <li>Fundamentals & Theoretical Concepts mapped to modern pedagogy.</li>
+                <li>Hands-on laboratory exercises with interactive sandbox environments.</li>
+                <li>Assignment design and rubric evaluation strategies for classroom deployment.</li>
+                <li>Capstone project and official certification issuance.</li>
+              </ul>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '.8rem', marginTop: '1.5rem' }}>
+              <button className="secondary-button" onClick={() => setSelectedCourseModal(null)}>
+                Close
+              </button>
+              <button
+                className="primary-button"
+                onClick={() => {
+                  handleEnroll(selectedCourseModal);
+                  setSelectedCourseModal(null);
+                }}
+              >
+                {selectedCourseModal.enrolled ? 'Unenroll' : 'Enroll in Program Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================================
+   4. Universal Settings Page (With Light/Dark/System Theme Switcher for ALL)
+   ========================================================================= */
+export function UniversalSettingsPage({
+  user,
+  onUserUpdated,
+  accountTypeLabel,
+}: {
+  user: User;
+  onUserUpdated: (user: User) => void;
+  accountTypeLabel: string;
+}): ReactElement {
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const stored = localStorage.getItem(themeStorageKey) as ThemeMode;
+    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
+  });
+  const [message, setMessage] = useState('');
+
+  function changeTheme(mode: ThemeMode) {
+    setThemeMode(mode);
+    localStorage.setItem(themeStorageKey, mode);
+    applyThemeClass(mode);
+    setMessage(`Theme changed to ${mode.charAt(0).toUpperCase() + mode.slice(1)} mode.`);
+  }
+
+  function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const updated: User = {
+      ...user,
+      name: String(form.get('name') ?? user.name),
+      education: String(form.get('education') ?? user.education),
+      year: Number(form.get('year') ?? user.year),
+      designation: String(form.get('designation') ?? user.designation ?? ''),
+      department: String(form.get('department') ?? user.department ?? ''),
+      institution: String(form.get('institution') ?? user.institution ?? ''),
+      linkedinUrl: String(form.get('linkedin') ?? ''),
+      githubUrl: String(form.get('github') ?? ''),
+      portfolioUrl: String(form.get('portfolio') ?? ''),
+      collegeName: String(form.get('college') ?? ''),
+      studentId: String(form.get('studentId') ?? ''),
+    };
+    localStorage.setItem('achievecell-mock-user', JSON.stringify(updated));
+    onUserUpdated(updated);
+    setMessage('Your profile and account preferences have been saved successfully.');
+  }
+
+  return (
+    <div className="page">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">{accountTypeLabel} Workspace</p>
+          <h1>Settings & Preferences</h1>
+          <p className="muted">Configure appearance, theme, personal credentials, and notification options.</p>
+        </div>
+      </div>
+
+      {message && <div className="success-message" role="status">✓ {message}</div>}
+
+      <div className="dashboard-grid">
+        {/* Universal Theme Switcher Card */}
+        <section className="card" style={{ gridColumn: 'span 2' }}>
+          <div className="card-heading">
+            <div>
+              <p className="section-kicker">Display Appearance</p>
+              <h2>Workspace Theme</h2>
+              <p>Choose your preferred interface theme across all AchieveCell dashboards.</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem', marginTop: '.6rem' }}>
+            <button
+              className={`role-card ${themeMode === 'light' ? 'selected' : ''}`}
+              style={{ minHeight: 'auto', padding: '1.2rem', cursor: 'pointer' }}
+              onClick={() => changeTheme('light')}
+            >
+              <div className="role-card-top">
+                <span style={{ fontSize: '1.4rem' }}>☀️</span>
+                {themeMode === 'light' && <Badge tone="selected">Active</Badge>}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '.6rem 0 .2rem' }}>Light Mode</h2>
+              <p style={{ fontSize: '.78rem', margin: 0 }}>Clean, crisp daylight theme with high readability.</p>
+            </button>
+
+            <button
+              className={`role-card ${themeMode === 'dark' ? 'selected' : ''}`}
+              style={{ minHeight: 'auto', padding: '1.2rem', cursor: 'pointer' }}
+              onClick={() => changeTheme('dark')}
+            >
+              <div className="role-card-top">
+                <span style={{ fontSize: '1.4rem' }}>🌙</span>
+                {themeMode === 'dark' && <Badge tone="selected">Active</Badge>}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '.6rem 0 .2rem' }}>Dark Mode</h2>
+              <p style={{ fontSize: '.78rem', margin: 0 }}>High-contrast dark surfaces for comfortable low-light viewing.</p>
+            </button>
+
+            <button
+              className={`role-card ${themeMode === 'system' ? 'selected' : ''}`}
+              style={{ minHeight: 'auto', padding: '1.2rem', cursor: 'pointer' }}
+              onClick={() => changeTheme('system')}
+            >
+              <div className="role-card-top">
+                <span style={{ fontSize: '1.4rem' }}>💻</span>
+                {themeMode === 'system' && <Badge tone="selected">Active</Badge>}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '.6rem 0 .2rem' }}>System Default</h2>
+              <p style={{ fontSize: '.78rem', margin: 0 }}>Automatically matches your operating system setting.</p>
+            </button>
+          </div>
+        </section>
+
+        {/* Profile Details Form */}
+        <section className="card" style={{ gridColumn: 'span 2' }}>
+          <div className="card-heading">
+            <div>
+              <p className="section-kicker">Identity & Credentials</p>
+              <h2>Edit Account Profile</h2>
+            </div>
+          </div>
+
+          <form className="form-stack" onSubmit={handleSave}>
+            <label htmlFor="user-name">
+              Full Name
+              <input id="user-name" name="name" defaultValue={user.name} required />
+            </label>
+
+            {user.accountType === 'academician' && (
+              <>
+                <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                  <label htmlFor="user-desig">
+                    Academic Designation
+                    <input id="user-desig" name="designation" defaultValue={user.designation ?? 'Associate Professor'} />
+                  </label>
+                  <label htmlFor="user-dept">
+                    Department
+                    <input id="user-dept" name="department" defaultValue={user.department ?? 'Computer Science & Engineering'} />
+                  </label>
+                </div>
+                <label htmlFor="user-inst">
+                  Institution / University Name
+                  <input id="user-inst" name="institution" defaultValue={user.institution ?? 'AchieveCell Institute of Technology'} />
+                </label>
+              </>
+            )}
+
+            {user.accountType === 'student' && (
+              <>
+                <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                  <label htmlFor="user-edu">
+                    Degree / Specialization
+                    <input id="user-edu" name="education" defaultValue={user.education ?? 'B.Tech CSE'} />
+                  </label>
+                  <label htmlFor="user-year">
+                    Cohort Year
+                    <input id="user-year" name="year" type="number" min="1" max="8" defaultValue={user.year ?? 2} />
+                  </label>
+                </div>
+                <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                  <label htmlFor="user-college">
+                    Enrolled College
+                    <input id="user-college" name="college" defaultValue={user.collegeName ?? 'AchieveCell Institute of Technology'} />
+                  </label>
+                  <label htmlFor="user-id">
+                    Roll Number / Student ID
+                    <input id="user-id" name="studentId" defaultValue={user.studentId ?? 'ACIT-2024-CSE-042'} />
+                  </label>
+                </div>
+              </>
+            )}
+
+            {user.accountType === 'college' && (
+              <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                <label htmlFor="user-code">
+                  AISHE / College Code
+                  <input id="user-code" defaultValue="C-10482-ACIT" />
+                </label>
+                <label htmlFor="user-naac">
+                  Accreditation Rating
+                  <input id="user-naac" defaultValue="NAAC A++ Grade · NBA Tier-1" />
+                </label>
+              </div>
+            )}
+
+            {user.accountType === 'company' && (
+              <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                <label htmlFor="user-domain">
+                  Industry / Domain
+                  <input id="user-domain" defaultValue="Information Technology & Enterprise Services" />
+                </label>
+                <label htmlFor="user-hq">
+                  Headquarters
+                  <input id="user-hq" defaultValue="Bangalore, Karnataka, India" />
+                </label>
+              </div>
+            )}
+
+            <p className="section-kicker" style={{ marginTop: '1rem' }}>Connected Links & Profiles</p>
+
+            <label htmlFor="user-linkedin">
+              LinkedIn Profile URL
+              <input id="user-linkedin" name="linkedin" defaultValue={user.linkedinUrl ?? 'https://linkedin.com/in/achievecell-user'} />
+            </label>
+
+            <label htmlFor="user-github">
+              GitHub Profile URL
+              <input id="user-github" name="github" defaultValue={user.githubUrl ?? 'https://github.com/achievecell-dev'} />
+            </label>
+
+            <label htmlFor="user-portfolio">
+              Portfolio / Website URL
+              <input id="user-portfolio" name="portfolio" defaultValue={user.portfolioUrl ?? 'https://achievecell.dev'} />
+            </label>
+
+            <button className="primary-button" type="submit" style={{ marginTop: '.8rem' }}>
+              Save Profile Changes
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   5. Student Dashboard
    ========================================================================= */
 export function Dashboard({ token }: { token: string }): ReactElement {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -2026,7 +3171,7 @@ export function Dashboard({ token }: { token: string }): ReactElement {
 }
 
 /* =========================================================================
-   4. Student AI Roadmap Page
+   6. Student AI Roadmap Page
    ========================================================================= */
 export function AiRoadmapPage({
   user,
@@ -2097,7 +3242,7 @@ export function AiRoadmapPage({
               <p className="section-kicker" style={{ marginBottom: '.4rem' }}>Target Competencies</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '.8rem' }}>
                 {m.skills.map((s) => (
-                  <div key={s.name} style={{ background: '#f8fafd', padding: '.65rem .85rem', borderRadius: '.6rem' }}>
+                  <div key={s.name} style={{ background: 'var(--card-hover-bg, #f8fafd)', padding: '.65rem .85rem', borderRadius: '.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.3rem' }}>
                       <strong style={{ fontSize: '.84rem' }}>{s.name}</strong>
                       <small>{s.proficiency}% / {s.target}% Target</small>
@@ -2145,7 +3290,7 @@ export function AiRoadmapPage({
 }
 
 /* =========================================================================
-   5. Student Internship Corner (Functional Page)
+   7. Student Internship Corner
    ========================================================================= */
 export function StudentInternshipsPage({
   token,
@@ -2286,140 +3431,7 @@ export function StudentInternshipsPage({
 }
 
 /* =========================================================================
-   6. Student Settings Page (With Light/Dark Mode Toggle)
-   ========================================================================= */
-export function StudentSettingsPage({
-  user,
-  onUserUpdated,
-}: {
-  user: User;
-  onUserUpdated: (user: User) => void;
-}): ReactElement {
-  const [isDark, setIsDark] = useState(() => localStorage.getItem(themeStorageKey) === 'dark');
-  const [message, setMessage] = useState('');
-
-  function toggleTheme() {
-    const next = !isDark;
-    setIsDark(next);
-    localStorage.setItem(themeStorageKey, next ? 'dark' : 'light');
-    if (next) {
-      document.body.classList.add('dark-theme');
-    } else {
-      document.body.classList.remove('dark-theme');
-    }
-    setMessage(`Switched to ${next ? 'Dark' : 'Light'} display mode.`);
-  }
-
-  function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const updated: User = {
-      ...user,
-      name: String(form.get('name') ?? user.name),
-      education: String(form.get('education') ?? user.education),
-      year: Number(form.get('year') ?? user.year),
-      linkedinUrl: String(form.get('linkedin') ?? ''),
-      githubUrl: String(form.get('github') ?? ''),
-      portfolioUrl: String(form.get('portfolio') ?? ''),
-      collegeName: String(form.get('college') ?? ''),
-      studentId: String(form.get('studentId') ?? ''),
-    };
-    localStorage.setItem('achievecell-mock-user', JSON.stringify(updated));
-    onUserUpdated(updated);
-    setMessage('Your student profile and link credentials were saved successfully!');
-  }
-
-  return (
-    <div className="page">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">Account & Preference Management</p>
-          <h1>Profile & Settings</h1>
-          <p className="muted">Manage your student credentials, connected accounts, and workspace appearance.</p>
-        </div>
-      </div>
-
-      {message && <div className="success-message" role="status">✓ {message}</div>}
-
-      <div className="dashboard-grid">
-        <section className="card" style={{ gridColumn: 'span 2' }}>
-          <div className="card-heading">
-            <div>
-              <p className="section-kicker">Display Appearance</p>
-              <h2>Workspace Theme</h2>
-              <p>Toggle between Light and Dark mode for high-contrast viewing.</p>
-            </div>
-            <button className="secondary-button" onClick={toggleTheme}>
-              {isDark ? '☀️ Switch to Light Mode' : '🌙 Switch to Dark Mode'}
-            </button>
-          </div>
-        </section>
-
-        <section className="card" style={{ gridColumn: 'span 2' }}>
-          <div className="card-heading">
-            <div>
-              <p className="section-kicker">Personal & Academic Details</p>
-              <h2>Edit Profile</h2>
-            </div>
-          </div>
-
-          <form className="form-stack" onSubmit={handleSave}>
-            <label htmlFor="student-name">
-              Full Name
-              <input id="student-name" name="name" defaultValue={user.name} required />
-            </label>
-
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="student-edu">
-                Degree / Specialization
-                <input id="student-edu" name="education" defaultValue={user.education ?? 'B.Tech CSE'} />
-              </label>
-              <label htmlFor="student-year">
-                Graduation Cohort Year
-                <input id="student-year" name="year" type="number" min="1" max="8" defaultValue={user.year ?? 2} />
-              </label>
-            </div>
-
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="student-college">
-                Enrolled College / University
-                <input id="student-college" name="college" defaultValue={user.collegeName ?? 'AchieveCell Institute of Technology'} />
-              </label>
-              <label htmlFor="student-id">
-                Roll Number / Student ID
-                <input id="student-id" name="studentId" defaultValue={user.studentId ?? 'ACIT-2024-CSE-042'} />
-              </label>
-            </div>
-
-            <p className="section-kicker" style={{ marginTop: '1rem' }}>Connected Accounts & Portfolios</p>
-
-            <label htmlFor="student-linkedin">
-              LinkedIn Profile URL
-              <input id="student-linkedin" name="linkedin" defaultValue={user.linkedinUrl ?? 'https://linkedin.com/in/ananya-sharma'} placeholder="https://linkedin.com/in/..." />
-            </label>
-
-            <label htmlFor="student-github">
-              GitHub Profile URL
-              <input id="student-github" name="github" defaultValue={user.githubUrl ?? 'https://github.com/ananya-dev'} placeholder="https://github.com/..." />
-            </label>
-
-            <label htmlFor="student-portfolio">
-              Personal Portfolio Website URL
-              <input id="student-portfolio" name="portfolio" defaultValue={user.portfolioUrl ?? 'https://ananya-portfolio.dev'} placeholder="https://..." />
-            </label>
-
-            <button className="primary-button" type="submit" style={{ marginTop: '.8rem' }}>
-              Save Profile Changes
-            </button>
-          </form>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================================
-   7. College Dashboard (Finalized with Working Recommendations & Submitters UI)
+   8. College Dashboard
    ========================================================================= */
 export function CollegeDashboard({
   user,
@@ -2499,55 +3511,11 @@ export function CollegeDashboard({
 
   if (focus === 'settings') {
     return (
-      <div className="page">
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">Institutional Administration</p>
-            <h1>College Profile & Settings</h1>
-            <p className="muted">Configure campus placement details, accreditation info, and coordinator contacts.</p>
-          </div>
-        </div>
-
-        {message && <div className="success-message" role="status">✓ {message}</div>}
-
-        <section className="card">
-          <form
-            className="form-stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setMessage('College institutional profile updated successfully.');
-            }}
-          >
-            <label htmlFor="college-inst-name">
-              Institution Name
-              <input id="college-inst-name" defaultValue={user.name} />
-            </label>
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="college-code">
-                AISHE / College Code
-                <input id="college-code" defaultValue="C-10482-ACIT" />
-              </label>
-              <label htmlFor="college-naac">
-                Accreditation Rating
-                <input id="college-naac" defaultValue="NAAC A++ Grade · NBA Tier-1" />
-              </label>
-            </div>
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="college-officer">
-                Dean of Placements / Officer
-                <input id="college-officer" defaultValue="Dr. S. K. Ramanathan" />
-              </label>
-              <label htmlFor="college-email">
-                Placement Cell Contact Email
-                <input id="college-email" defaultValue="placements@achievecell.demo" />
-              </label>
-            </div>
-            <button className="primary-button" type="submit">
-              Save Institutional Settings
-            </button>
-          </form>
-        </section>
-      </div>
+      <UniversalSettingsPage
+        user={user}
+        onUserUpdated={onUserUpdated}
+        accountTypeLabel="College Institutional"
+      />
     );
   }
 
@@ -2662,10 +3630,9 @@ export function CollegeDashboard({
 
           {/* Detailed Lists: Ready vs Needs Preparation */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.2rem', marginTop: '1.4rem' }}>
-            {/* Ready Students List */}
-            <div style={{ border: '1px solid #c9edd8', background: '#f6fbf8', borderRadius: '.8rem', padding: '1rem' }}>
+            <div style={{ border: '1px solid var(--border-success, #c9edd8)', background: 'var(--card-hover-bg, #f6fbf8)', borderRadius: '.8rem', padding: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.8rem' }}>
-                <strong style={{ color: '#176943' }}>✓ Ready for Placement (Match ≥ 70%)</strong>
+                <strong style={{ color: 'var(--accent-green, #176943)' }}>✓ Ready for Placement (Match ≥ 70%)</strong>
                 <Badge tone="strong">{String(mockStudentsDirectory.filter((s) => s.readiness >= 70).length)} Ready</Badge>
               </div>
               <div className="skill-table">
@@ -2675,7 +3642,7 @@ export function CollegeDashboard({
                     <div
                       key={student.id}
                       className="skill-row"
-                      style={{ background: '#fff', cursor: 'pointer' }}
+                      style={{ cursor: 'pointer' }}
                       onClick={() => setViewingStudent(student)}
                     >
                       <div className="skill-meta">
@@ -2692,10 +3659,9 @@ export function CollegeDashboard({
               </div>
             </div>
 
-            {/* Needs Preparation Students List */}
-            <div style={{ border: '1px solid #fed7aa', background: '#fffbf5', borderRadius: '.8rem', padding: '1rem' }}>
+            <div style={{ border: '1px solid var(--border-warning, #fed7aa)', background: 'var(--card-hover-bg, #fffbf5)', borderRadius: '.8rem', padding: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.8rem' }}>
-                <strong style={{ color: '#9a3412' }}>! Needs Preparation (Match &lt; 70%)</strong>
+                <strong style={{ color: 'var(--accent-orange, #9a3412)' }}>! Needs Preparation (Match &lt; 70%)</strong>
                 <Badge tone="needs-improvement">{String(mockStudentsDirectory.filter((s) => s.readiness < 70).length)} In Training</Badge>
               </div>
               <div className="skill-table">
@@ -2705,7 +3671,7 @@ export function CollegeDashboard({
                     <div
                       key={student.id}
                       className="skill-row"
-                      style={{ background: '#fff', cursor: 'pointer' }}
+                      style={{ cursor: 'pointer' }}
                       onClick={() => setViewingStudent(student)}
                     >
                       <div className="skill-meta">
@@ -2815,7 +3781,7 @@ export function CollegeDashboard({
 
           {/* Selected Sprint Detailed Submitters UI */}
           {selectedSprint && (
-            <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e7ebf4', paddingTop: '1.2rem' }}>
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle, #e7ebf4)', paddingTop: '1.2rem' }}>
               <div className="card-heading">
                 <div>
                   <p className="section-kicker">{selectedSprint.company} Partner Verification</p>
@@ -2826,9 +3792,8 @@ export function CollegeDashboard({
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.2rem' }}>
-                {/* Submitted / Verified List */}
                 <div>
-                  <h3 style={{ fontSize: '.92rem', color: '#176943', marginBottom: '.6rem' }}>
+                  <h3 style={{ fontSize: '.92rem', color: 'var(--accent-green, #176943)', marginBottom: '.6rem' }}>
                     ✓ Submitted & Verified ({mockStudentsDirectory.filter((s) => s.completedSprints.includes(selectedSprint.title)).length})
                   </h3>
                   <div className="skill-table">
@@ -2860,9 +3825,8 @@ export function CollegeDashboard({
                   </div>
                 </div>
 
-                {/* Pending / In Progress List */}
                 <div>
-                  <h3 style={{ fontSize: '.92rem', color: '#854d0e', marginBottom: '.6rem' }}>
+                  <h3 style={{ fontSize: '.92rem', color: 'var(--accent-orange, #854d0e)', marginBottom: '.6rem' }}>
                     ⏳ Pending / In Progress ({mockStudentsDirectory.filter((s) => !s.completedSprints.includes(selectedSprint.title)).length})
                   </h3>
                   <div className="skill-table">
@@ -2938,7 +3902,7 @@ export function CollegeDashboard({
 }
 
 /* =========================================================================
-   8. Company Dashboard (Finalized with Post Internships & Recruiter Settings)
+   9. Company Dashboard
    ========================================================================= */
 export function CompanyDashboard({
   user,
@@ -3008,59 +3972,11 @@ export function CompanyDashboard({
 
   if (focus === 'settings') {
     return (
-      <div className="page">
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">Talent Acquisition Settings</p>
-            <h1>Company Profile & Hiring Preferences</h1>
-            <p className="muted">Manage your corporate recruitment brand, preferred hiring requirements, and recruiter contacts.</p>
-          </div>
-        </div>
-
-        {message && <div className="success-message" role="status">✓ {message}</div>}
-
-        <section className="card">
-          <form
-            className="form-stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setMessage('Recruiter company profile and hiring preferences saved successfully.');
-            }}
-          >
-            <label htmlFor="comp-name">
-              Company Name
-              <input id="comp-name" defaultValue={user.name} />
-            </label>
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="comp-domain">
-                Industry / Domain
-                <input id="comp-domain" defaultValue="Information Technology & Enterprise Services" />
-              </label>
-              <label htmlFor="comp-hq">
-                Headquarters
-                <input id="comp-hq" defaultValue="Bangalore, Karnataka, India" />
-              </label>
-            </div>
-            <div className="options" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              <label htmlFor="comp-recruiter">
-                Recruiter Name & Title
-                <input id="comp-recruiter" defaultValue="Rohan Verma · Lead Campus Recruiter" />
-              </label>
-              <label htmlFor="comp-email">
-                Contact Email
-                <input id="comp-email" defaultValue={user.email} />
-              </label>
-            </div>
-            <label htmlFor="comp-prefs">
-              Target Focus Skills for Upcoming Roles
-              <input id="comp-prefs" defaultValue="React, SQL, Node.js, Python, Git" />
-            </label>
-            <button className="primary-button" type="submit">
-              Save Company Settings
-            </button>
-          </form>
-        </section>
-      </div>
+      <UniversalSettingsPage
+        user={user}
+        onUserUpdated={onUserUpdated}
+        accountTypeLabel="Corporate Recruiter"
+      />
     );
   }
 
@@ -3263,7 +4179,7 @@ export function CompanyDashboard({
 }
 
 /* =========================================================================
-   9. Recommendations, Skills, Target Role, Skill Gap, Assessments
+   10. Recommendations, Skills, Target Role, Skill Gap, Assessments
    ========================================================================= */
 export function RecommendationsPage({ token }: { token: string }): ReactElement {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -3696,7 +4612,6 @@ export function AssessmentsPage({ token }: { token: string }): ReactElement {
                   checked={answers[question.id] === optionIndex}
                   onChange={() => setAnswers({ ...answers, [question.id]: optionIndex })}
                 />
-                <span>{String.fromCharCode(65 + optionIndex)}</span>
                 {option}
               </label>
             ))}
@@ -3762,7 +4677,7 @@ export function AssessmentsPage({ token }: { token: string }): ReactElement {
 }
 
 /* =========================================================================
-   10. AppShell Router & Global Lifted State
+   11. AppShell Router & Global Lifted State
    ========================================================================= */
 export function AppShell({
   token,
@@ -3780,26 +4695,33 @@ export function AppShell({
   const [showNotifications, setShowNotifications] = useState(false);
   const [sprints, setSprints] = useState<SkillSprint[]>(getStoredSprints);
   const [internships, setInternships] = useState<Internship[]>(getStoredInternships);
+  const [academicianCourses, setAcademicianCourses] = useState<AcademicianCourse[]>(getStoredAcademicianCourses);
   const [shortlistedIds, setShortlistedIds] = useState<number[]>(getStoredShortlisted);
   const [appliedInternshipIds, setAppliedInternshipIds] = useState<number[]>(getStoredApplied);
   const [enrolledSprintIds, setEnrolledSprintIds] = useState<number[]>(getStoredEnrollments);
   const [skills, setSkills] = useState<Skill[]>(getLocalSkills);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const stored = localStorage.getItem(themeStorageKey) as ThemeMode;
+    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
+  });
 
-  // Initialize theme on mount
+  // Apply theme on mount and whenever themeMode changes
   useEffect(() => {
-    const isDark = localStorage.getItem(themeStorageKey) === 'dark';
-    if (isDark) {
-      document.body.classList.add('dark-theme');
-    } else {
-      document.body.classList.remove('dark-theme');
-    }
-  }, []);
+    applyThemeClass(themeMode);
+  }, [themeMode]);
 
   useEffect(() => {
     const listener = () => setRoute(routeKey());
     window.addEventListener('popstate', listener);
     return () => window.removeEventListener('popstate', listener);
   }, []);
+
+  function toggleHeaderTheme() {
+    const next: ThemeMode = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+    setThemeMode(next);
+    localStorage.setItem(themeStorageKey, next);
+    applyThemeClass(next);
+  }
 
   const unreadCount = notifications.filter(
     (n) => !n.read && (n.recipientRole === user.accountType || n.recipientRole === 'all'),
@@ -3828,13 +4750,22 @@ export function AppShell({
         saveStoredApplied(next);
       }
       navigate('/internships');
+    } else if (item.actionPayload?.type === 'enroll_course') {
+      const courseId = item.actionPayload.targetId;
+      handleToggleAcademicianCourse(courseId);
+      navigate('/courses');
     }
 
-    // Mark as read
     const updated = notifications.map((n) => (n.id === item.id ? { ...n, read: true } : n));
     setNotifications(updated);
     saveStoredNotifications(updated);
     setShowNotifications(false);
+  }
+
+  function handleToggleAcademicianCourse(courseId: number) {
+    const next = academicianCourses.map((c) => (c.id === courseId ? { ...c, enrolled: !c.enrolled } : c));
+    setAcademicianCourses(next);
+    saveStoredAcademicianCourses(next);
   }
 
   function handleLaunchSprint(newSprint: SkillSprint) {
@@ -3842,7 +4773,6 @@ export function AppShell({
     setSprints(nextSprints);
     saveStoredSprints(nextSprints);
 
-    // Emit real-time notification to students
     const studentNotification: NotificationItem = {
       id: Date.now(),
       recipientRole: 'student',
@@ -3865,7 +4795,6 @@ export function AppShell({
     setInternships(nextInternships);
     saveStoredInternships(nextInternships);
 
-    // Emit notification to students and colleges
     const studentNotif: NotificationItem = {
       id: Date.now(),
       recipientRole: 'student',
@@ -3905,7 +4834,6 @@ export function AppShell({
       setInternships(nextInternships);
       saveStoredInternships(nextInternships);
 
-      // Emit notification to company
       const companyNotif: NotificationItem = {
         id: Date.now(),
         recipientRole: 'company',
@@ -3930,22 +4858,89 @@ export function AppShell({
 
   const currentPath = new URL(route, window.location.origin).pathname;
   const queriedCareerId = new URL(route, window.location.origin).searchParams.get('career');
+
   const navigation =
-    user.accountType === 'college'
-      ? collegeNavigation
-      : user.accountType === 'company'
-        ? companyNavigation
-        : studentNavigation;
+    user.accountType === 'academician'
+      ? academicianNavigation
+      : user.accountType === 'college'
+        ? collegeNavigation
+        : user.accountType === 'company'
+          ? companyNavigation
+          : studentNavigation;
 
   const workspaceLabel =
-    user.accountType === 'college'
-      ? 'College workspace'
-      : user.accountType === 'company'
-        ? 'Company workspace'
-        : 'Student workspace';
+    user.accountType === 'academician'
+      ? 'Academician workspace'
+      : user.accountType === 'college'
+        ? 'College workspace'
+        : user.accountType === 'company'
+          ? 'Company workspace'
+          : 'Student workspace';
 
   let page: ReactElement;
-  if (user.accountType === 'college') {
+
+  if (user.accountType === 'academician') {
+    if (currentPath === '/courses') {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          focus="courses"
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    } else if (currentPath === '/skills') {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          focus="skills"
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    } else if (currentPath === '/mylearning') {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          focus="mylearning"
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    } else if (currentPath === '/recommendations') {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          focus="recommendations"
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    } else if (currentPath === '/settings') {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          focus="settings"
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    } else {
+      page = (
+        <AcademicianDashboard
+          user={user}
+          courses={academicianCourses}
+          onToggleEnroll={handleToggleAcademicianCourse}
+          onUserUpdated={onUserUpdated}
+        />
+      );
+    }
+  } else if (user.accountType === 'college') {
     if (currentPath === '/sprints') page = <CollegeDashboard user={user} focus="sprints" sprints={sprints} onLaunchSprint={handleLaunchSprint} onUserUpdated={onUserUpdated} />;
     else if (currentPath === '/readiness') page = <CollegeDashboard user={user} focus="readiness" sprints={sprints} onLaunchSprint={handleLaunchSprint} onUserUpdated={onUserUpdated} />;
     else if (currentPath === '/students') page = <CollegeDashboard user={user} focus="students" sprints={sprints} onLaunchSprint={handleLaunchSprint} onUserUpdated={onUserUpdated} />;
@@ -3963,10 +4958,10 @@ export function AppShell({
     else if (currentPath === '/skills') page = <SkillsPage token={token} />;
     else if (currentPath === '/target-role') page = <TargetRolePage token={token} user={user} onUserUpdated={onUserUpdated} />;
     else if (currentPath === '/skill-gap') page = <SkillGapPage token={token} user={user} initialCareerId={queriedCareerId} />;
-    else if (currentPath === '/assessments' || currentPath === '/assessment') page = <AssessmentsPage token={token} />;
+    else if (currentPath === '/assessments') page = <AssessmentsPage token={token} />;
     else if (currentPath === '/roadmap') page = <AiRoadmapPage user={user} />;
     else if (currentPath === '/internships') page = <StudentInternshipsPage token={token} internships={internships} appliedIds={appliedInternshipIds} onApply={handleApplyInternship} />;
-    else if (currentPath === '/settings') page = <StudentSettingsPage user={user} onUserUpdated={onUserUpdated} />;
+    else if (currentPath === '/settings') page = <UniversalSettingsPage user={user} onUserUpdated={onUserUpdated} accountTypeLabel="Student" />;
     else page = <Dashboard token={token} />;
   }
 
@@ -3984,7 +4979,9 @@ export function AppShell({
                 currentPath === href ||
                 (href === '/assessments' && currentPath === '/assessment') ||
                 (href === '/discovery' && currentPath === '/discovery') ||
-                (href === '/readiness' && currentPath === '/readiness')
+                (href === '/readiness' && currentPath === '/readiness') ||
+                (href === '/courses' && currentPath === '/courses') ||
+                (href === '/mylearning' && currentPath === '/mylearning')
                   ? 'nav-active'
                   : ''
               }
@@ -4002,6 +4999,14 @@ export function AppShell({
               <span>◎</span>Target Role
             </button>
           )}
+          {user.accountType === 'academician' && (
+            <button onClick={() => navigate('/courses')}>
+              <span>◈</span>Browse Courses
+            </button>
+          )}
+          <button onClick={() => navigate('/settings')}>
+            <span>⚙</span>Settings & Theme
+          </button>
           <button onClick={onLogout}>
             <span>↪</span>Log out
           </button>
@@ -4013,18 +5018,36 @@ export function AppShell({
           <div>
             <p className="mobile-brand">✦ AchieveCell</p>
             <span className="header-label">
-              {workspaceLabel} · {user.accountType === 'student' ? user.targetRole?.name ?? 'Choose a target role' : user.name}
+              {workspaceLabel} · {user.accountType === 'student' ? user.targetRole?.name ?? 'Choose a target role' : user.accountType === 'academician' ? user.department ?? 'Faculty Upskilling' : user.name}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.8rem', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', position: 'relative' }}>
+            {/* Quick Header Dark/Light Theme Switcher */}
+            <button
+              className="ghost-button"
+              onClick={toggleHeaderTheme}
+              style={{
+                padding: '.55rem .75rem',
+                borderRadius: '.7rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1rem',
+              }}
+              title="Toggle Dark / Light Theme"
+              aria-label="Toggle Dark / Light Theme"
+            >
+              {document.body.classList.contains('dark-theme') ? '☀️' : '🌙'}
+            </button>
+
             {/* Live Notification Bell */}
             <button
               className="ghost-button"
               onClick={() => setShowNotifications((prev) => !prev)}
               style={{
                 position: 'relative',
-                padding: '.6rem .75rem',
+                padding: '.55rem .75rem',
                 borderRadius: '.7rem',
                 display: 'flex',
                 alignItems: 'center',
@@ -4063,7 +5086,7 @@ export function AppShell({
             >
               <span>{user.name.charAt(0)}</span>
               <div>
-                <small>Signed in as</small>
+                <small>{user.accountType === 'academician' ? 'Academician' : 'Signed in as'}</small>
                 <b>{user.name}</b>
               </div>
             </button>
@@ -4101,6 +5124,12 @@ export default function App(): ReactElement {
     setToken(null);
     setUser(null);
     navigate('/login');
+  }, []);
+
+  useEffect(() => {
+    // Initial theme setup on page load
+    const stored = (localStorage.getItem(themeStorageKey) as ThemeMode) || 'light';
+    applyThemeClass(stored);
   }, []);
 
   useEffect(() => {
